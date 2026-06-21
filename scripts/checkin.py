@@ -31,7 +31,7 @@ except ImportError:
 BASE_URL = os.environ.get("V2FREE_URL", "https://w1.maxo.top")
 
 # 认证方式：password（账号密码）或 cookie（直接用 Cookie）
-AUTH_METHOD = os.environ.get("AUTH_METHOD", "password")
+AUTH_METHOD = os.environ.get("AUTH_METHOD", "cookie")
 
 # 账号密码（从 GitHub Secrets 中读取，不要明文写在这里！）
 EMAIL = os.environ.get("V2FREE_EMAIL", "")
@@ -317,7 +317,7 @@ def main():
             authenticated = client.set_cookie(COOKIE)
         else:
             log.error("❌ Cookie 为空！请检查 Secrets 中 V2FREE_COOKIE 的配置")
-    elif AUTH_METHOD == "password":
+    elif AUTH_METHOD == "cookie":
         if EMAIL and PASSWORD:
             authenticated = client.login_by_password(EMAIL, PASSWORD)
         else:

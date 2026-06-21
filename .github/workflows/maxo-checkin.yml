@@ -1,0 +1,85 @@
+# ============================================================
+#  V2Free (Maxo) 每日自动签到 — GitHub Actions 工作流
+#
+#  📌 功能说明：
+#     每天 08:30（北京时间）自动执行 V2Free 签到
+#     无需开电脑、无需服务器，完全免费
+#
+#  💰 费用：
+#     公开仓库：免费无限使用
+#     私有仓库：每月 2000 分钟免费额度（签到每次约 5 秒，远远够用）
+#
+#  ⏱ 执行频率：
+#     每天一次（北京时间 08:30）
+#     可手动触发（Actions 页面 → Run workflow）
+#
+#  🔒 安全说明：
+#     账号密码/Cookie 存储在 GitHub Secrets 中，
+#     不会出现在代码或日志里
+#
+# ============================================================
+
+name: V2Free 每日自动签到
+
+on:
+  # 定时触发：每天北京时间 08:30（UTC 00:30）
+  schedule:
+    - cron: '30 0 * * *'
+  
+  # 允许手动触发（方便测试和临时签到）
+  workflow_dispatch:
+
+jobs:
+  checkin:
+    name: 执行签到
+    runs-on: ubuntu-latest
+    
+    steps:
+      # ---- 步骤 1: Checkout 代码 ----
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      # ---- 步骤 2: 安装 Python 依赖 ----
+      - name: 🐍 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 安装依赖
+        run: pip install requests -q
+
+      # ---- 步骤 3: 执行签到脚本 ----
+      - name: ✅ 执行签到
+        env:
+          # ========== 在这里配置你的认证方式（二选一）==========
+          
+          # 方式 A: 账号密码登录（推荐 ✅）
+          # 优点: Cookie 过期后可自动重新登录
+          AUTH_METHOD: password
+          V2FREE_EMAIL: ${{ secrets.V2FREE_EMAIL }}       # 你的 V2Free 注册邮箱
+          V2FREE_PASSWORD: ${{ secrets.V2FREE_PASSWORD }}   # 你的 V2Free 密码
+          
+          # 方式 B: Cookie 直接访问（可选）
+          # 如果想用 Cookie，把上面三行注释掉，取消下面两行注释：
+          # AUTH_METHOD: cookie
+          # V2FREE_COOKIE: ${{ secrets.V2FREE_COOKIE }}     # 完整的 Cookie 字符串
+          
+          # ========== 其他配置（一般不需要改）==========
+          V2FREE_URL: ${{ vars.V2FREE_URL || 'https://w1.maxo.top' }}
+          TZ_OFFSET: '8'                                    # 时区偏移（东八区）
+          
+        run: python scripts/checkin.py
+
+      # ---- 步骤 4: 签到失败时通知（可选）----
+      - name: 📧 签到失败通知
+        if: failure()
+        run: |
+          echo "::warning::V2Free 签到失败！请检查 Secrets 配置和账号状态。"
+          echo "::warning::如果连续多天失败，可能需要更新 Cookie 或密码。"
+
+      # ---- 步骤 5: 记录执行结果 ----
+      - name: 📊 记录执行时间
+        if: always()
+        run: |
+          echo "执行时间: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+          echo "下次执行: 明天 08:30 北京时间"
